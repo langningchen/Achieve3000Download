@@ -1,3 +1,0 @@
-/home/langningc2009/Coding/Projects/Achieve3000Download/build/CMakeFiles/main.dir
-/home/langningc2009/Coding/Projects/Achieve3000Download/build/CMakeFiles/edit_cache.dir
-/home/langningc2009/Coding/Projects/Achieve3000Download/build/CMakeFiles/rebuild_cache.dir

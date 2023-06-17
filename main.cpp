@@ -75,12 +75,7 @@ int main()
     }
     int Index;
     cout << "Please input the id: ";
-#ifdef TEST
-    Index = 1;
-    cout << "1" << endl;
-#else
     cin >> Index;
-#endif
     if (Index >= Counter)
     {
         TRIGGER_ERROR("Input which is " + to_string(Index) + " must less than" + to_string(Counter));
@@ -216,9 +211,6 @@ int main()
     WritingQuestion = StringReplaceAll(WritingQuestion, "\n\n", "\n  </span>\n  <br />\n  <span>\n    ");
     WritingQuestion = "  <span>\n    " + WritingQuestion + "\n  </span>";
     OutputContent = StringReplaceAll(OutputContent, "${WRITING_QUESTION}", WritingQuestion);
-#ifdef TEST
-    SetDataFromStringToFile(FileName + ".html", OutputContent);
-#else
     SetDataFromStringToFile("/mnt/c/Users/Public/" + FileName + ".html", OutputContent);
     if (system(string("\"/mnt/c/Program Files/Google/Chrome/Application/chrome.exe\" --kiosk-printing --kiosk \"C:\\Users\\Public\\" + FileName + ".html\"").c_str()))
     {
@@ -232,10 +224,6 @@ int main()
     {
         TRIGGER_ERROR("Delete failed");
     }
-#endif
-#ifdef TEST
-    OutputSummary("Success");
-#endif
     CLN_CATCH
     return 0;
 }
