@@ -1,0 +1,1 @@
+g++  -Wall -std=c++14 CMakeFiles/main.dir/home/langningc2009/Coding/Lib/Exception.cpp.o CMakeFiles/main.dir/home/langningc2009/Coding/Lib/Curl.cpp.o CMakeFiles/main.dir/home/langningc2009/Coding/Lib/StringOperation.cpp.o CMakeFiles/main.dir/main.cpp.o -o main  /usr/lib/x86_64-linux-gnu/libcurl.so 
