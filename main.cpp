@@ -1,6 +1,166 @@
 #include "Curl.hpp"
 #include <regex>
 #include <unistd.h>
+const string VocabularyTemplate = R"(<span class="Big3\">
+    <span>
+        ${Word}
+    </span>
+    <span class="Code">
+        ${SpeechPart}
+    </span>
+</span>
+<br />
+<span>
+    ${Definition}
+</span>
+<br />
+)";
+const string PollChoicesTemplate = R"(<input type="checkbox" class="CheckBox" />
+<span>
+    ${ChoiceText}
+</span>
+<br />)";
+const string PrintTemplate = R"(<script>
+    window.print();
+    setTimeout(function () {
+        window.close();
+    }, 1500);
+</script>)";
+const string Template = R"(<html>
+
+<head>
+    <title>
+        ${LESSON_NAME}
+    </title>
+    <style>
+        * {
+            font-size: 15px;
+        }
+
+        .Big1,
+        .Big2,
+        .Big3 {
+            font-weight: 600;
+        }
+
+        .Big1 {
+            font-size: 25px;
+        }
+
+        .Big2 {
+            font-size: 20px;
+        }
+
+        .Big3 {
+            font-size: 18px;
+        }
+
+        .Code,
+        .CodeBlock {
+            border-radius: 3px;
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 2px 5px;
+            color: black;
+        }
+
+        .CodeBlock {
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        .CheckBox {
+            vertical-align: middle;
+            height: 20px;
+            width: 20px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <span class="Big1">
+        ${LESSON_NAME}
+    </span>
+    <br />
+    <br />
+    <span class="Big2">
+        Ready
+    </span>
+    <br />
+    <br />
+    <span>
+        ${POLL_QUESTION}
+    </span>
+    <br />
+    <span>
+        ${OPTION_STATEMENT}
+    </span>
+    <br />
+    ${POLL_CHOICES}
+    <span>
+        Explain why you voted the way you did.
+    </span>
+    <br />
+    <br />
+    <div class="CodeBlock">
+        <br />
+        <br />
+        <br />
+    </div>
+    <span class="Big2">
+        Vocabulary
+    </span>
+    <br />
+    <br />
+    ${VOCABULARY_LIST}
+    <span class="Big2">
+        Ready
+    </span>
+    <br />
+    <br />
+    ${ARTICLE_CONTENT}
+    <br />
+    ${ARTICLE_IMAGES}
+    <span class="Big2">
+        Respond
+    </span>
+    <br />
+    <br />
+    ${QUESTION_LIST}
+    <span class="Big2">
+        Reflect
+    </span>
+    <br />
+    <br />
+    <span>
+        ${POLL_QUESTION}
+    </span>
+    <br />
+    <span>
+        ${OPTION_STATEMENT}
+    </span>
+    <br />
+    ${POLL_CHOICES}
+    </div>
+    <span class="Big2">
+        Write
+    </span>
+    <br />
+    <br />
+    ${WRITING_QUESTION}
+    <br />
+    <br />
+    <div class="CodeBlock">
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+    </div>
+    ${PRINT}
+</body>
+
+</html>)";
 string NormalizeString(string Data)
 {
     Data = regex_replace(Data, regex("(<[/]?[^>]*>|\n|\t)"), "");
@@ -8,26 +168,64 @@ string NormalizeString(string Data)
     Data = StringReplaceAll(Data, "\t", "");
     return Data;
 }
-int main()
+int main(int argc, char **argv)
 {
     CLN_TRY
+    int Index = 0;
+    bool Open = true;
+    bool Print = true;
+    bool Delete = true;
+    std::string Username = "";
+    std::string Password = "";
+    for (int i = 1; i < argc; i++)
+    {
+        string Argument = argv[i];
+        string NextArgument = i + 1 == argc ? "" : argv[i + 1];
+        if (Argument == "-i" || Argument == "--id")
+        {
+            if ((Index = atoi(NextArgument.c_str())) == 0)
+                TRIGGER_ERROR("Invalid id passed");
+        }
+        else if (Argument == "-no" || Argument == "--no-open")
+            Open = false;
+        else if (Argument == "-np" || Argument == "--no-print")
+            Print = false;
+        else if (Argument == "-nd" || Argument == "--no-delete")
+            Delete = false;
+        else if (Argument == "-u" || Argument == "--username")
+        {
+            Username = NextArgument;
+            i++;
+        }
+        else if (Argument == "-p" || Argument == "--password")
+        {
+            Password = NextArgument;
+            i++;
+        }
+        else
+            TRIGGER_ERROR("Unknown option \"" + Argument + "\"");
+    }
+    if (Username == "")
+        TRIGGER_ERROR("No username provided");
+    if (Password == "")
+        TRIGGER_ERROR("No password provided");
     curl_slist *HeaderList = NULL;
     HeaderList = curl_slist_append(HeaderList, "X-Requested-With: XMLHttpRequest");
     cout << "Logging in... " << flush;
     GetDataToFile("https://portal.achieve3000.com/util/login.php",
-                  "Header.tmp",
-                  "Body.tmp",
+                  "",
+                  "",
                   true,
                   "debug=0"s +
                       "&login_goto=" +
                       "&lang=1" +
                       "&ajax_yn=Y" +
                       "&flash_version=" +
-                      "&login_name=" + GetDataFromFileToString("Keys/Achieve3000Username") +
+                      "&login_name=" + Username +
                       "&wz=0" +
                       "&cli=0" +
                       "&login_url=portal.achieve3000.com%2Findex" +
-                      "&password=" + GetDataFromFileToString("Keys/Achieve3000Password") +
+                      "&password=" + Password +
                       "&cdn=VIDEOCDN%3A0%3BAUDIOCDN%3A0%3BIMAGECDN%3A0%3BDOCSCDN%3A0%3BIMAGEASSETSCDN%3A0%3BAPPASSETSCDN%3A0%3BJSASSETSCDN%3A0%3BCSSASSETSCDN%3A0" +
                       "&banner=1" +
                       "&redirectedFromLE=" +
@@ -44,9 +242,7 @@ int main()
                   NULL,
                   "application/x-www-form-urlencoded; charset=UTF-8");
     if (GetDataFromFileToString().find("REDIRECT") == string::npos)
-    {
         TRIGGER_ERROR("Login failed");
-    }
     cout << "Succeed" << endl
          << "Getting your lessons... " << flush;
     GetDataToFile("https://portal.achieve3000.com/my_lessons");
@@ -73,13 +269,13 @@ int main()
              << endl;
         Counter++;
     }
-    int Index;
-    cout << "Please input the id: ";
-    cin >> Index;
-    if (Index >= Counter)
+    if (Index == 0)
     {
-        TRIGGER_ERROR("Input which is " + to_string(Index) + " must less than" + to_string(Counter));
+        cout << "Please input the id: ";
+        cin >> Index;
     }
+    if (Index >= Counter)
+        TRIGGER_ERROR("Input which is " + to_string(Index) + " must less than" + to_string(Counter));
 
     cout << "Getting lessons detail... " << flush;
     string LessonID = Lessons[Index - 1].first;
@@ -94,14 +290,14 @@ int main()
     HeaderList = curl_slist_append(HeaderList, string("X-ACHIEVE-SESSION-KEY: " + Data["session"]["resumeSessionToken"].as_string()).c_str());
     HeaderList = curl_slist_append(HeaderList, string("X-XSRF-TOKEN: " + Data["session"]["csrfToken"].as_string()).c_str());
     string FileName = regex_replace(NormalizeString(Data["lessonInfo"]["lessonName"].as_string()), regex("(\\?|\"|/|\\|\\|<|>|:|\\*)"), "");
-    string OutputContent = GetDataFromFileToString("Projects/Achieve3000Download/Template.html");
+    string OutputContent = Template;
     OutputContent = StringReplaceAll(OutputContent, "${LESSON_NAME}", NormalizeString(Data["lessonInfo"]["lessonName"].as_string()));
     OutputContent = StringReplaceAll(OutputContent, "${POLL_QUESTION}", EraseHTMLElement(Data["poll"]["question"].as_string()));
     OutputContent = StringReplaceAll(OutputContent, "${OPTION_STATEMENT}", Data["poll"]["opinionStatement"].as_string());
     string PollChoices = "";
     for (json::iterator jit = Data["poll"]["choices"].begin(); jit != Data["poll"]["choices"].end(); jit++)
     {
-        PollChoices += StringReplaceAll(GetDataFromFileToString("Projects/Achieve3000Download/PollChoicesTemplate.html"),
+        PollChoices += StringReplaceAll(PollChoicesTemplate,
                                         "${ChoiceText}",
                                         jit.value()["choiceText"].as_string());
     }
@@ -109,7 +305,7 @@ int main()
     string VocabularyList = "";
     for (json::iterator jit = Data["lessonContent"]["vocabulary"].begin(); jit != Data["lessonContent"]["vocabulary"].end(); jit++)
     {
-        string CurrentVocabularyList = GetDataFromFileToString("Projects/Achieve3000Download/VocabularyTemplate.html");
+        string CurrentVocabularyList = VocabularyTemplate;
         CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${Word}", jit.value()["word"].as_string());
         CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${SpeechPart}", jit.value()["speechPart"].as_string());
         CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${Definition}", jit.value()["definition"].as_string());
@@ -211,19 +407,12 @@ int main()
     WritingQuestion = StringReplaceAll(WritingQuestion, "\n\n", "\n  </span>\n  <br />\n  <span>\n    ");
     WritingQuestion = "  <span>\n    " + WritingQuestion + "\n  </span>";
     OutputContent = StringReplaceAll(OutputContent, "${WRITING_QUESTION}", WritingQuestion);
+    OutputContent = StringReplaceAll(OutputContent, "${PRINT}", Print ? PrintTemplate : "");
     SetDataFromStringToFile("/mnt/c/Users/Public/" + FileName + ".html", OutputContent);
-    if (system(string("\"/mnt/c/Program Files/Google/Chrome/Application/chrome.exe\" --kiosk-printing --kiosk \"C:\\Users\\Public\\" + FileName + ".html\"").c_str()))
-    {
+    if (Open && system(string("\"/mnt/c/Program Files/Google/Chrome/Application/chrome.exe\" "s + (Print ? "--kiosk-printing --kiosk " : "") + "\"C:\\Users\\Public\\" + FileName + ".html\"").c_str()))
         TRIGGER_ERROR("Call chrome.exe to open file failed");
-    }
-    char DeleteOrNot;
-    cout << "Delete the html file(n=No other=Yes)? ";
-    cin >> DeleteOrNot;
-    if ((DeleteOrNot != 'n' && DeleteOrNot != 'N') &&
-        (remove(string("/mnt/c/Users/Public/" + FileName + ".html").c_str())) == -1)
-    {
+    if (Open && Print && Delete && (remove(string("/mnt/c/Users/Public/" + FileName + ".html").c_str())) == -1)
         TRIGGER_ERROR("Delete failed");
-    }
     CLN_CATCH
     return 0;
 }
