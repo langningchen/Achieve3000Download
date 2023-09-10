@@ -172,9 +172,7 @@ int main(int argc, char **argv)
 {
     CLN_TRY
     int Index = 0;
-    bool Open = true;
     bool Print = true;
-    bool Delete = true;
     std::string Username = "";
     std::string Password = "";
     for (int i = 1; i < argc; i++)
@@ -186,12 +184,8 @@ int main(int argc, char **argv)
             if ((Index = atoi(NextArgument.c_str())) == 0)
                 TRIGGER_ERROR("Invalid id passed");
         }
-        else if (Argument == "-no" || Argument == "--no-open")
-            Open = false;
-        else if (Argument == "-np" || Argument == "--no-print")
+        else if (Argument == "-n" || Argument == "--no-print")
             Print = false;
-        else if (Argument == "-nd" || Argument == "--no-delete")
-            Delete = false;
         else if (Argument == "-u" || Argument == "--username")
         {
             Username = NextArgument;
@@ -245,8 +239,8 @@ int main(int argc, char **argv)
         TRIGGER_ERROR("Login failed");
     cout << "Succeed" << endl
          << "Getting your lessons... " << flush;
-    GetDataToFile("https://portal.achieve3000.com/my_lessons");
-    string HTMLData = GetDataFromFileToString();
+    GetDataToFile("https://portal.achieve3000.com/api/v1/student/my-lessons");
+    configor::json JSONData = configor::json::parse(GetDataFromFileToString());
     cout << "Succeed" << endl
          << "Searching available lessons... " << flush;
     vector<pair<string, pair<string, string>>> Lessons;
@@ -409,10 +403,6 @@ int main(int argc, char **argv)
     OutputContent = StringReplaceAll(OutputContent, "${WRITING_QUESTION}", WritingQuestion);
     OutputContent = StringReplaceAll(OutputContent, "${PRINT}", Print ? PrintTemplate : "");
     SetDataFromStringToFile("/mnt/c/Users/Public/" + FileName + ".html", OutputContent);
-    if (Open && system(string("\"/mnt/c/Program Files/Google/Chrome/Application/chrome.exe\" "s + (Print ? "--kiosk-printing --kiosk " : "") + "\"C:\\Users\\Public\\" + FileName + ".html\"").c_str()))
-        TRIGGER_ERROR("Call chrome.exe to open file failed");
-    if (Open && Print && Delete && (remove(string("/mnt/c/Users/Public/" + FileName + ".html").c_str())) == -1)
-        TRIGGER_ERROR("Delete failed");
     CLN_CATCH
     return 0;
 }
