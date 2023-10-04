@@ -9,7 +9,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Install dependencies
-      uses: ${{ GITHUB_REPOSITORY }}/.github/workflows/install-dependencies.yml@main
+      uses: ${{ github.repository }}/.github/workflows/install-dependencies.yml@main
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}/build
     - name: Build

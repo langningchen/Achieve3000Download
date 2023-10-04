@@ -21,7 +21,7 @@ jobs:
       with:
         languages: c-cpp
     - name: Install dependencies
-      uses: ${{ GITHUB_REPOSITORY }}/.github/workflows/install-dependencies.yml@main
+      uses: ${{ github.repository }}/.github/workflows/install-dependencies.yml@main
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
     - name: Perform CodeQL Analysis
