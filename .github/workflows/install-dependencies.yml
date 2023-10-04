@@ -26,7 +26,6 @@ jobs:
         cd ./openssl-1.1.1q/
         ./config
         make
-        sudo make install
         cd ../
     - name: Install libcurl
       if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -37,9 +36,14 @@ jobs:
         cd ./curl-7.85.0/
         ./configure --with-openssl
         make
-        sudo make install
         cd ../
     - name: Install to system
       run: |
+        cd ./openssl-1.1.1q/
+        sudo make install
+        cd ../
+        cd ./curl-7.85.0/
+        sudo make install
+        cd ../
         sudo cp /usr/local/lib/libssl.* /usr/lib
         sudo cp /usr/local/lib/libcurl.* /usr/lib
