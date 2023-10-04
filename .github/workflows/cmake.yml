@@ -3,13 +3,13 @@ on:
   push:
     branches: [ "main" ]
 jobs:
+  Installependencies:
+    uses: langningchen/Achieve3000Download/.github/workflows/install-dependencies.yml@main
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-    - name: Install dependencies
-      uses: langningchen/Achieve3000Download/.github/workflows/install-dependencies.yml@main
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}/build
     - name: Build

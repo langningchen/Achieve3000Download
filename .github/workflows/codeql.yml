@@ -5,6 +5,8 @@ on:
   pull_request:
     branches: [ "main" ]
 jobs:
+  Installependencies:
+    uses: langningchen/Achieve3000Download/.github/workflows/install-dependencies.yml@main
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
@@ -20,8 +22,6 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: c-cpp
-    - name: Install dependencies
-      uses: langningchen/Achieve3000Download/.github/workflows/install-dependencies.yml@main
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
     - name: Perform CodeQL Analysis
