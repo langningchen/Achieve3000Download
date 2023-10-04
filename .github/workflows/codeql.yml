@@ -10,6 +10,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    needs: [InstallDependencies]
     timeout-minutes: 360
     permissions:
       actions: read

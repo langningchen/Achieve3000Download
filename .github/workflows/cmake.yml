@@ -3,10 +3,11 @@ on:
   push:
     branches: [ "main" ]
 jobs:
-  Installependencies:
+  InstallDependencies:
     uses: langningchen/Achieve3000Download/.github/workflows/install-dependencies.yml@main
   build:
     runs-on: ubuntu-latest
+    needs: [InstallDependencies]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
