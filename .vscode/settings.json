@@ -1,3 +1,6 @@
 {
-    "cph.general.saveLocation": ""
+    "cph.general.saveLocation": "",
+    "files.associations": {
+        "ostream": "cpp"
+    }
 }

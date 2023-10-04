@@ -20,12 +20,6 @@ const string PollChoicesTemplate = R"(<input type="checkbox" class="CheckBox" />
     ${ChoiceText}
 </span>
 <br />)";
-const string PrintTemplate = R"(<script>
-    window.print();
-    setTimeout(function () {
-        window.close();
-    }, 1500);
-</script>)";
 const string Template = R"(<html>
 
 <head>
@@ -83,9 +77,9 @@ const string Template = R"(<html>
     </span>
     <br />
     <br />
-    <span class="Big2">
+    <div class="Big2">
         Ready
-    </span>
+    </div>
     <br />
     <br />
     <span>
@@ -107,29 +101,29 @@ const string Template = R"(<html>
         <br />
         <br />
     </div>
-    <span class="Big2">
+    <div class="Big2">
         Vocabulary
-    </span>
+    </div>
     <br />
     <br />
     ${VOCABULARY_LIST}
-    <span class="Big2">
+    <div class="Big2">
         Ready
-    </span>
+    </div>
     <br />
     <br />
     ${ARTICLE_CONTENT}
     <br />
     ${ARTICLE_IMAGES}
-    <span class="Big2">
+    <div class="Big2">
         Respond
-    </span>
+    </div>
     <br />
     <br />
     ${QUESTION_LIST}
-    <span class="Big2">
+    <div class="Big2">
         Reflect
-    </span>
+    </div>
     <br />
     <br />
     <span>
@@ -142,9 +136,9 @@ const string Template = R"(<html>
     <br />
     ${POLL_CHOICES}
     </div>
-    <span class="Big2">
+    <div class="Big2">
         Write
-    </span>
+    </div>
     <br />
     <br />
     ${WRITING_QUESTION}
@@ -157,7 +151,6 @@ const string Template = R"(<html>
         <br />
         <br />
     </div>
-    ${PRINT}
 </body>
 
 </html>)";
@@ -171,8 +164,7 @@ string NormalizeString(string Data)
 int main(int argc, char **argv)
 {
     CLN_TRY
-    int Index = 0;
-    bool Print = true;
+    size_t Index = 0;
     std::string Username = "";
     std::string Password = "";
     for (int i = 1; i < argc; i++)
@@ -184,8 +176,6 @@ int main(int argc, char **argv)
             if ((Index = atoi(NextArgument.c_str())) == 0)
                 TRIGGER_ERROR("Invalid id passed");
         }
-        else if (Argument == "-n" || Argument == "--no-print")
-            Print = false;
         else if (Argument == "-u" || Argument == "--username")
         {
             Username = NextArgument;
@@ -243,39 +233,24 @@ int main(int argc, char **argv)
     configor::json JSONData = configor::json::parse(GetDataFromFileToString());
     cout << "Succeed" << endl
          << "Searching available lessons... " << flush;
-    vector<pair<string, pair<string, string>>> Lessons;
-    smatch Match;
-    string::const_iterator StartPos = HTMLData.cbegin();
-    while (regex_search(StartPos, HTMLData.cend(), Match, regex("<a class=\"title\" href=\"/lesson\\?lid=([0-9]*)&c=([0-9]*)&sc=([0-9]*)&oid=[0-9]*&ot=[0-9]*&asn=[0-9]*\"  >[^<]*</a>[^5]*5-Step Lesson</span></div>")))
-    {
-        Lessons.push_back(make_pair(Match.str(1), make_pair(Match.str(2), Match.str(3))));
-        StartPos = Match.suffix().first;
-    }
+    vector<string> FetchURLs;
     cout << "Succeed" << endl;
-    int Counter = 1;
-    for (vector<pair<string, pair<string, string>>>::iterator vit = Lessons.begin(); vit != Lessons.end(); vit++)
-    {
-        GetDataToFile(string("https://portal.achieve3000.com/api/v1/lessoncontent/fetch?lid=" + vit->first + "&c=" + vit->second.first + "&sc=" + vit->second.second).c_str());
-        json Data = json::parse(GetDataFromFileToString());
-        cout << "#" << Counter << "  " << NormalizeString(Data["lessonInfo"]["lessonName"]) << endl
-             << NormalizeString(Data["lessonInfo"]["lessonSummary"]) << endl
-             << NormalizeString(Data["lessonInfo"]["categoryName"]) << ": " << NormalizeString(Data["lessonInfo"]["subCategoryName"]) << endl
-             << endl;
-        Counter++;
-    }
+    for (size_t i = 0; i < JSONData.size(); i++)
+        if (JSONData[i]["lessonType"].as_string() == "5-Step Lesson" && !JSONData[i]["isLessonCompleted"].as_bool())
+        {
+            FetchURLs.push_back("https://portal.achieve3000.com/api/v1/lessoncontent/fetch?" + JSONData[i]["lessonUrl"].as_string().substr(8));
+            cout << "\033[32m#" << (i + 1) << "\033[0m\t\033[31m" << JSONData[i]["lessonName"].as_string() << "\033[0m\r\033[40C\033[K\033[10C\033[33m" << JSONData[i]["categoryName"].as_string() << "\033[0m: \033[34m" << JSONData[i]["sCategoryName"].as_string() << "\033[0m" << endl;
+        }
     if (Index == 0)
     {
         cout << "Please input the id: ";
         cin >> Index;
     }
-    if (Index >= Counter)
-        TRIGGER_ERROR("Input which is " + to_string(Index) + " must less than" + to_string(Counter));
+    if (Index >= FetchURLs.size() || Index < 0)
+        TRIGGER_ERROR("Input which is " + to_string(Index) + " must less than" + to_string(FetchURLs.size()) + " and greater than 0");
 
     cout << "Getting lessons detail... " << flush;
-    string LessonID = Lessons[Index - 1].first;
-    string CategoryID = Lessons[Index - 1].second.first;
-    string SubcategoryID = Lessons[Index - 1].second.second;
-    GetDataToFile(string("https://portal.achieve3000.com/api/v1/lessoncontent/fetch?lid=" + LessonID + "&c=" + CategoryID + "&sc=" + SubcategoryID).c_str());
+    GetDataToFile(FetchURLs[Index - 1].c_str());
     json Data = json::parse(GetDataFromFileToString());
     cout << "Succeed" << endl
          << "Generating content... " << flush;
@@ -313,7 +288,8 @@ int main(int argc, char **argv)
     Article = regex_replace(Article, regex("<a class='dict-word' href='#' title='Show dictionary definition'>[a-zA-Z\\s]*</a>"), "");
     Article = regex_replace(Article, regex("<!--.*-->"), "");
     vector<string> PictureVector;
-    StartPos = Article.cbegin();
+    auto StartPos = Article.cbegin();
+    smatch Match;
     while (regex_search(StartPos, Article.cend(), Match, regex("<img[^>]*src=\"([^\"]*)\"[^>]*>")))
     {
         PictureVector.push_back(Match.str(1));
@@ -341,7 +317,7 @@ int main(int argc, char **argv)
             ArticleImages += "  <img src=\"" + URL + "\" style=\"width: 48%; \"/>\n";
         }
     OutputContent = StringReplaceAll(OutputContent, "${ARTICLE_IMAGES}", ArticleImages);
-    Counter = 0;
+    int Counter = 0;
     string QuestionList = "";
     for (json::iterator jit = Data["activities"]["14"][0]["questions"].begin(); jit != Data["activities"]["14"][0]["questions"].end(); jit++)
     {
@@ -401,8 +377,8 @@ int main(int argc, char **argv)
     WritingQuestion = StringReplaceAll(WritingQuestion, "\n\n", "\n  </span>\n  <br />\n  <span>\n    ");
     WritingQuestion = "  <span>\n    " + WritingQuestion + "\n  </span>";
     OutputContent = StringReplaceAll(OutputContent, "${WRITING_QUESTION}", WritingQuestion);
-    OutputContent = StringReplaceAll(OutputContent, "${PRINT}", Print ? PrintTemplate : "");
-    SetDataFromStringToFile("/mnt/c/Users/Public/" + FileName + ".html", OutputContent);
+    SetDataFromStringToFile(FileName + ".html", OutputContent);
+    cout << "Succeed" << endl;
     CLN_CATCH
     return 0;
 }
