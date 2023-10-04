@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [ "main" ]
 jobs:
-  Installependencies:
+  InstallDependencies:
     uses: langningchen/Achieve3000Download/.github/workflows/install-dependencies.yml@main
   analyze:
     name: Analyze

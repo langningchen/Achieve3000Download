@@ -9,7 +9,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Update submodules
       run: git submodule update --init --recursive
-    - name: Restore cache
+    - name: Restore and save cache
       id: restore-cache
       uses: actions/cache@v2
       with:
@@ -39,14 +39,6 @@ jobs:
         make
         sudo make install
         cd ../
-    - name: Save cache
-      if: steps.restore-cache.outputs.cache-hit != 'true'
-      uses: actions/cache@v2
-      with:
-        path: |
-          openssl-1.1.1q
-          curl-7.85.0
-        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
     - name: Install to system
       run: |
         sudo cp /usr/local/lib/libssl.* /usr/lib
