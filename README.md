@@ -1,4 +1,4 @@
-[![wakatime](https://wakatime.com/badge/github/langningchen/Achieve3000Download.svg)](https://wakatime.com/badge/github/langningchen/Achieve3000Download)[![CMake](https://github.com/langningchen/Achieve3000Download/actions/workflows/cmake.yml/badge.svg)](https://github.com/langningchen/Achieve3000Download/actions/workflows/cmake.yml)[![CodeQL](https://github.com/langningchen/Achieve3000Download/actions/workflows/codeql.yml/badge.svg)](https://github.com/langningchen/Achieve3000Download/actions/workflows/codeql.yml)
+[![wakatime](https://wakatime.com/badge/github/langningchen/Achieve3000Download.svg)](https://wakatime.com/badge/github/langningchen/Achieve3000Download)[![CodeQL](https://github.com/langningchen/Achieve3000Download/actions/workflows/codeql.yml/badge.svg)](https://github.com/langningchen/Achieve3000Download/actions/workflows/codeql.yml)
 
 # Achieve3000 Download
 
