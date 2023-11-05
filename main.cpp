@@ -19,25 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <Curl.hpp>
 #include <regex>
 #include <unistd.h>
-const string VocabularyTemplate = R"(<span class="Big3\">
-    <span>
-        ${Word}
-    </span>
-    <span class="Code">
-        ${SpeechPart}
-    </span>
-</span>
-<br />
-<span>
-    ${Definition}
-</span>
-<br />
+const string VocabularyTemplate = R"(<span>${Word}</span>
+<span class="Code">${SpeechPart}</span>
+<span>${Definition}</span>
+<br>
 )";
-const string PollChoicesTemplate = R"(<input type="checkbox" class="CheckBox" />
-<span>
-    ${ChoiceText}
-</span>
-<br />)";
 const string Template = R"(<html>
 
 <head>
@@ -47,6 +33,10 @@ const string Template = R"(<html>
     <style>
         * {
             font-size: 15px;
+        }
+
+        span {
+            margin-right: 5px;
         }
 
         .Big1,
@@ -60,115 +50,48 @@ const string Template = R"(<html>
         }
 
         .Big2 {
-            font-size: 20px;
+            font-size: 22px;
         }
 
         .Big3 {
             font-size: 18px;
         }
 
-        .Code,
-        .CodeBlock {
+        .Code {
             border-radius: 3px;
             background-color: rgba(0, 0, 0, 0.05);
             padding: 2px 5px;
             color: black;
         }
 
-        .CodeBlock {
-            border-radius: 10px;
-            width: 100%;
+        .Content {
+            line-height: 2;
         }
-
-        .CheckBox {
-            vertical-align: middle;
-            height: 20px;
-            width: 20px;
-        }
-
     </style>
 </head>
 
 <body>
     <span class="Big1">
-        ${LESSON_NAME}
+        ${LESSON_NAME} (${DATE})
     </span>
-    <br />
-    <br />
-    <div class="Big2">
-        Ready
+    <hr>
+    <div class="Content">
+        ${ARTICLE_CONTENT}
     </div>
-    <br />
-    <br />
-    <span>
-        ${POLL_QUESTION}
-    </span>
-    <br />
-    <span>
-        ${OPTION_STATEMENT}
-    </span>
-    <br />
-    ${POLL_CHOICES}
-    <span>
-        Explain why you voted the way you did.
-    </span>
-    <br />
-    <br />
-    <div class="CodeBlock">
-        <br />
-        <br />
-        <br />
-    </div>
+    <hr>
     <div class="Big2">
         Vocabulary
     </div>
-    <br />
-    <br />
-    ${VOCABULARY_LIST}
-    <div class="Big2">
-        Ready
+    <br>
+    <div class="Content">
+        ${VOCABULARY_LIST}
     </div>
-    <br />
-    <br />
-    ${ARTICLE_CONTENT}
-    <br />
-    ${ARTICLE_IMAGES}
+    <hr>
     <div class="Big2">
         Respond
     </div>
-    <br />
-    <br />
+    <br>
     ${QUESTION_LIST}
-    <div class="Big2">
-        Reflect
-    </div>
-    <br />
-    <br />
-    <span>
-        ${POLL_QUESTION}
-    </span>
-    <br />
-    <span>
-        ${OPTION_STATEMENT}
-    </span>
-    <br />
-    ${POLL_CHOICES}
-    </div>
-    <div class="Big2">
-        Write
-    </div>
-    <br />
-    <br />
-    ${WRITING_QUESTION}
-    <br />
-    <br />
-    <div class="CodeBlock">
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-    </div>
 </body>
 
 </html>)";
@@ -277,42 +200,22 @@ int main(int argc, char **argv)
     HeaderList = curl_slist_append(HeaderList, string("X-ACHIEVE-SESSION-KEY: " + Data["session"]["resumeSessionToken"].as_string()).c_str());
     HeaderList = curl_slist_append(HeaderList, string("X-XSRF-TOKEN: " + Data["session"]["csrfToken"].as_string()).c_str());
     string FileName = regex_replace(NormalizeString(Data["lessonInfo"]["lessonName"].as_string()), regex("(\\?|\"|/|\\|\\|<|>|:|\\*)"), "");
+
     string OutputContent = Template;
     OutputContent = StringReplaceAll(OutputContent, "${LESSON_NAME}", NormalizeString(Data["lessonInfo"]["lessonName"].as_string()));
-    OutputContent = StringReplaceAll(OutputContent, "${POLL_QUESTION}", EraseHTMLElement(Data["poll"]["question"].as_string()));
-    OutputContent = StringReplaceAll(OutputContent, "${OPTION_STATEMENT}", Data["poll"]["opinionStatement"].as_string());
-    string PollChoices = "";
-    for (json::iterator jit = Data["poll"]["choices"].begin(); jit != Data["poll"]["choices"].end(); jit++)
-    {
-        PollChoices += StringReplaceAll(PollChoicesTemplate,
-                                        "${ChoiceText}",
-                                        jit.value()["choiceText"].as_string());
-    }
-    OutputContent = StringReplaceAll(OutputContent, "${POLL_CHOICES}", PollChoices);
-    string VocabularyList = "";
-    for (json::iterator jit = Data["lessonContent"]["vocabulary"].begin(); jit != Data["lessonContent"]["vocabulary"].end(); jit++)
-    {
-        string CurrentVocabularyList = VocabularyTemplate;
-        CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${Word}", jit.value()["word"].as_string());
-        CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${SpeechPart}", jit.value()["speechPart"].as_string());
-        CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${Definition}", jit.value()["definition"].as_string());
-        VocabularyList += CurrentVocabularyList;
-    }
-    OutputContent = StringReplaceAll(OutputContent, "${VOCABULARY_LIST}", VocabularyList);
+
+    time_t Time = time(NULL);
+    tm *LocalTime = localtime(&Time);
+    char Date[11];
+    strftime(Date, 11, "%Y-%m-%d", LocalTime);
+    OutputContent = StringReplaceAll(OutputContent, "${DATE}", Date);
+
     string Article = Data["lessonContent"]["articles"][0]["pages"][0]["content"].as_string();
     Article = regex_replace(Article, regex("<em>[a-zA-Z\\s]* contributed to this story.</em>"), "");
     Article = regex_replace(Article, regex("Credit for photo and all related images: [^<]*"), "");
     Article = regex_replace(Article, regex("<[/]?(span|br|video|p|div)[^>]*>"), "");
     Article = regex_replace(Article, regex("<a class='dict-word' href='#' title='Show dictionary definition'>[a-zA-Z\\s]*</a>"), "");
     Article = regex_replace(Article, regex("<!--.*-->"), "");
-    vector<string> PictureVector;
-    auto StartPos = Article.cbegin();
-    smatch Match;
-    while (regex_search(StartPos, Article.cend(), Match, regex("<img[^>]*src=\"([^\"]*)\"[^>]*>")))
-    {
-        PictureVector.push_back(Match.str(1));
-        StartPos = Match.suffix().first;
-    }
     Article = regex_replace(Article, regex("<img[^>]*src=\"([^\"]*)\"[^>]*>"), "");
     Article = StringReplaceAll(Article, "\t", "");
     Article = StringReplaceAll(Article, " \n", "\n");
@@ -325,16 +228,18 @@ int main(int argc, char **argv)
     Article = StringReplaceAll(Article, "\n\n", "\n  </span>\n  <br />\n  <span>\n    ");
     Article = "  <span>\n    " + Article + "\n  </span>";
     OutputContent = StringReplaceAll(OutputContent, "${ARTICLE_CONTENT}", Article);
-    string ArticleImages = "";
-    for (vector<string>::iterator vit = PictureVector.begin(); vit != PictureVector.end(); vit++)
-        if (vit->find("magnify") == vit->npos && vit->size() > 1)
-        {
-            string URL = *vit;
-            if (URL[0] != 'h')
-                URL.insert(0, "https://portal.achieve3000.com");
-            ArticleImages += "  <img src=\"" + URL + "\" style=\"width: 48%; \"/>\n";
-        }
-    OutputContent = StringReplaceAll(OutputContent, "${ARTICLE_IMAGES}", ArticleImages);
+
+    string VocabularyList = "";
+    for (json::iterator jit = Data["lessonContent"]["vocabulary"].begin(); jit != Data["lessonContent"]["vocabulary"].end(); jit++)
+    {
+        string CurrentVocabularyList = VocabularyTemplate;
+        CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${Word}", jit.value()["word"].as_string());
+        CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${SpeechPart}", jit.value()["speechPart"].as_string());
+        CurrentVocabularyList = StringReplaceAll(CurrentVocabularyList, "${Definition}", jit.value()["definition"].as_string());
+        VocabularyList += CurrentVocabularyList;
+    }
+    OutputContent = StringReplaceAll(OutputContent, "${VOCABULARY_LIST}", VocabularyList);
+
     int Counter = 0;
     string QuestionList = "";
     for (json::iterator jit = Data["activities"]["14"][0]["questions"].begin(); jit != Data["activities"]["14"][0]["questions"].end(); jit++)
@@ -356,7 +261,7 @@ int main(int argc, char **argv)
             Question.erase(0, 1);
         Question = StringReplaceAll(Question, "\n\n", "\n  </span>\n  <br />\n  <span>\n    ");
         Question = "  <span>\n    " + Question + "\n  </span>";
-        QuestionList += Question + "\n  <br />\n";
+        QuestionList += "(&ensp;&ensp;&ensp;) " + Question + "\n  <br />\n";
         short Counter2 = 0;
         for (json::iterator jit2 = Data["activities"]["14"][0]["questions"][Counter]["collection"][0]["items"].begin(); jit2 != Data["activities"]["14"][0]["questions"][Counter]["collection"][0]["items"].end(); jit2++)
         {
@@ -373,7 +278,7 @@ int main(int argc, char **argv)
                 Item.erase(0, 1);
             Item = StringReplaceAll(Item, "\n\n", "\n    </span>\n    <br />\n    <span>\n      ");
             Item = "    <span>\n      " + Item + "\n    </span>";
-            QuestionList += "  <input type=\"checkbox\" class=\"CheckBox\" />\n  <span>\n    <span>\n      ";
+            QuestionList += "  <span>\n    <span>\n      ";
             QuestionList.push_back(Counter2 + 'A');
             QuestionList += ".&ensp;\n    </span>\n" + Item + "\n  </span>\n  <br />\n";
             Counter2++;
@@ -382,19 +287,7 @@ int main(int argc, char **argv)
         Counter++;
     }
     OutputContent = StringReplaceAll(OutputContent, "${QUESTION_LIST}", QuestionList);
-    string WritingQuestion = Data["thoughtQuestion"]["question"].as_string();
-    WritingQuestion = regex_replace(WritingQuestion, regex("<[/]?(span|br|video|p|div|a)[^>]*>"), "");
-    WritingQuestion = StringReplaceAll(WritingQuestion, "\t", "");
-    WritingQuestion = StringReplaceAll(WritingQuestion, " \n", "\n");
-    WritingQuestion = StringReplaceAll(WritingQuestion, "\n ", "\n");
-    WritingQuestion = StringReplaceAll(WritingQuestion, "\n\n\n", "\n\n");
-    while (WritingQuestion.size() > 0 && WritingQuestion[WritingQuestion.size() - 1] == '\n')
-        WritingQuestion.erase(WritingQuestion.size() - 1, 1);
-    while (WritingQuestion.size() > 0 && WritingQuestion[0] == '\n')
-        WritingQuestion.erase(0, 1);
-    WritingQuestion = StringReplaceAll(WritingQuestion, "\n\n", "\n  </span>\n  <br />\n  <span>\n    ");
-    WritingQuestion = "  <span>\n    " + WritingQuestion + "\n  </span>";
-    OutputContent = StringReplaceAll(OutputContent, "${WRITING_QUESTION}", WritingQuestion);
+
     SetDataFromStringToFile(FileName + ".html", OutputContent);
     cout << "Succeed" << endl;
     CLN_CATCH
