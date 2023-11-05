@@ -19,8 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <Curl.hpp>
 #include <regex>
 #include <unistd.h>
-const string VocabularyTemplate = R"(<span>${Word}</span>
-<span class="Code">${SpeechPart}</span>
+const string VocabularyTemplate = R"(<span><b>${Word}</b> (${SpeechPart})</span>
 <span>${Definition}</span>
 <br>
 )";
@@ -36,7 +35,7 @@ const string Template = R"(<html>
         }
 
         span {
-            margin-right: 5px;
+            margin-right: 3px;
         }
 
         .Big1,
@@ -57,11 +56,9 @@ const string Template = R"(<html>
             font-size: 18px;
         }
 
-        .Code {
-            border-radius: 3px;
-            background-color: rgba(0, 0, 0, 0.05);
-            padding: 2px 5px;
-            color: black;
+        .Small {
+            font-size: 10px;
+            color: rgb(0, 0, 0, 0.5);
         }
 
         .Content {
@@ -71,9 +68,10 @@ const string Template = R"(<html>
 </head>
 
 <body>
-    <span class="Big1">
-        ${LESSON_NAME} (${DATE})
-    </span>
+    <div class="Big1">
+        ${LESSON_NAME}
+    </div>
+    <div class="Small">${TIME} ${URL}</div>
     <hr>
     <div class="Content">
         ${ARTICLE_CONTENT}
@@ -180,7 +178,7 @@ int main(int argc, char **argv)
         if (JSONData[i]["lessonType"].as_string() == "5-Step Lesson" && !JSONData[i]["isLessonCompleted"].as_bool())
         {
             FetchURLs.push_back("https://portal.achieve3000.com/api/v1/lessoncontent/fetch?" + JSONData[i]["lessonUrl"].as_string().substr(8));
-            cout << "\033[32m#" << (i + 1) << "\033[0m\t\033[31m" << JSONData[i]["lessonName"].as_string() << "\033[0m\r\033[40C\033[K\033[10C\033[33m" << JSONData[i]["categoryName"].as_string() << "\033[0m: \033[34m" << JSONData[i]["sCategoryName"].as_string() << "\033[0m" << endl;
+            cout << "\033[32m#" << FetchURLs.size() << "\033[0m\t\033[31m" << JSONData[i]["lessonName"].as_string() << "\033[0m\r\033[40C\033[K\033[10C\033[33m" << JSONData[i]["categoryName"].as_string() << "\033[0m: \033[34m" << JSONData[i]["sCategoryName"].as_string() << "\033[0m" << endl;
         }
     if (Index == 0)
     {
@@ -206,9 +204,11 @@ int main(int argc, char **argv)
 
     time_t Time = time(NULL);
     tm *LocalTime = localtime(&Time);
-    char Date[11];
-    strftime(Date, 11, "%Y-%m-%d", LocalTime);
-    OutputContent = StringReplaceAll(OutputContent, "${DATE}", Date);
+    char Date[20];
+    strftime(Date, sizeof(Date), "%Y-%m-%d %H:%M:%S", LocalTime);
+    OutputContent = StringReplaceAll(OutputContent, "${TIME}", Date);
+
+    OutputContent = StringReplaceAll(OutputContent, "${URL}", FetchURLs[Index - 1]);
 
     string Article = Data["lessonContent"]["articles"][0]["pages"][0]["content"].as_string();
     Article = regex_replace(Article, regex("<em>[a-zA-Z\\s]* contributed to this story.</em>"), "");
