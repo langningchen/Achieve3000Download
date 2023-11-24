@@ -1,6 +1,16 @@
 {
     "cph.general.saveLocation": "",
     "files.associations": {
-        "ostream": "cpp"
-    }
+        "ostream": "cpp",
+        "iostream": "cpp",
+        "array": "cpp",
+        "bitset": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "regex": "cpp",
+        "utility": "cpp"
+    },
+    "cSpell.words": [
+        "configor"
+    ]
 }
